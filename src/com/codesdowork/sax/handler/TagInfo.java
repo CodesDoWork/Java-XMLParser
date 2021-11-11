@@ -70,42 +70,49 @@ public class TagInfo {
         this.resultType = resultType;
         this.field = field;
         this.type = type;
-        this.componentType = getComponentType(type);
-        this.isRepeatableType = this.componentType != this.type;
+        ComponentTypeResult result = getComponentType();
+        this.componentType = result.componentType;
+        this.isRepeatableType = result.isRepeatableType;
         this.isPrimitiveType = isPrimitiveType(componentType);
         this.parser = getParserClass();
         this.isParsable = parser != null;
     }
 
-    private static Class<?> getComponentType(Class<?> type) {
-        Class<?> originalType = type;
-        if (type.isArray()) {
-            return type.getComponentType();
+    private static record ComponentTypeResult(Class<?> componentType, boolean isRepeatableType) {}
+
+    private ComponentTypeResult getComponentType() {
+        Class<?> currentClass = this.type;
+        if (currentClass.isArray()) {
+            return new ComponentTypeResult(currentClass.getComponentType(), true);
         }
 
         do {
-            AnnotatedType[] types = type.getAnnotatedInterfaces();
+            AnnotatedType[] types = currentClass.getAnnotatedInterfaces();
             for (AnnotatedType annotatedType : types) {
-                if (isCollectionType(annotatedType) && annotatedType instanceof ParameterizedType pt) {
-                    Type t = pt.getActualTypeArguments()[0];
-                    if (t instanceof Class<?>) {
-                        return (Class<?>) t;
+                if (isCollectionType(annotatedType)) {
+                    if(annotatedType instanceof ParameterizedType pt) {
+                        Type t = pt.getActualTypeArguments()[0];
+                        if (t instanceof Class<?>) {
+                            return new ComponentTypeResult((Class<?>) t, true);
+                        }
                     }
+
+                    return new ComponentTypeResult(Object.class, true);
                 }
             }
 
-            AnnotatedType superType = type.getAnnotatedSuperclass();
+            AnnotatedType superType = currentClass.getAnnotatedSuperclass();
             if (superType != null && superType.getType() instanceof ParameterizedType pt) {
                 Type t = pt.getActualTypeArguments()[0];
                 if (t instanceof Class<?>) {
-                    return (Class<?>) t;
+                    return new ComponentTypeResult((Class<?>) t, true);
                 }
             }
 
-            type = type.getSuperclass();
-        } while (type != null);
+            currentClass = currentClass.getSuperclass();
+        } while (currentClass != null);
 
-        return originalType;
+        return new ComponentTypeResult(this.type, false);
     }
 
     private static boolean isCollectionType(AnnotatedType at) {
