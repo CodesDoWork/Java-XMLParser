@@ -16,21 +16,4 @@ public class ValueHandler {
 
         return result;
     }
-
-    private char firstChar() {
-        return currentValue.charAt(0);
-    }
-
-    private char lastChar() {
-        return currentValue.charAt(currentValue.length() - 1);
-    }
-
-    private boolean isRemovable(char c) {
-        return c == ' ' || c == '\r' || c == '\n';
-    }
-
-    @FunctionalInterface
-    private interface CharFunction {
-        char getChar();
-    }
 }
