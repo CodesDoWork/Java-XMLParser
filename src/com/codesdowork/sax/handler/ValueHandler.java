@@ -11,27 +11,10 @@ public class ValueHandler {
     }
 
     public String getValue() {
-        clearEnding(true);
-        clearEnding(false);
-        String result = currentValue;
+        String result = currentValue.trim();
         currentValue = Strings.EMPTY;
 
         return result;
-    }
-
-    private void clearEnding(boolean isStart) {
-        if (currentValue.isEmpty()) {
-            return;
-        }
-
-        CharFunction f = isStart ? this::firstChar : this::lastChar;
-        for (char c = f.getChar(); isRemovable(c); c = f.getChar()) {
-            int startIndex = isStart ? 1 : 0;
-            currentValue = currentValue.substring(startIndex, currentValue.length() + startIndex - 1);
-            if (currentValue.isEmpty()) {
-                return;
-            }
-        }
     }
 
     private char firstChar() {
