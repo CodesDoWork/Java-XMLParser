@@ -1,5 +1,5 @@
 # XMLParser
-A project to parse xml to any Object in Java!
+A project to parse XML to any Object or any Object to XML in Java!
 ***
 
 ## Usage
@@ -23,3 +23,7 @@ or the annotation equivalent:
         @XmlParser(BarParser.class)
         Bar bar:
     }
+    
+### 3. Object to XML
+
+    new XMLWriter().toXML(anyObject)
