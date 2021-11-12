@@ -7,6 +7,7 @@ import com.codesdowork.sax.parsers.Primitives;
 import org.xml.sax.Attributes;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
@@ -53,7 +54,9 @@ public class XMLObject<T> {
             if (tagInfo.type.isArray()) {
                 valueObject = Array.newInstance(tagInfo.componentType, 0);
             } else {
-                valueObject = tagInfo.type.getConstructor().newInstance();
+                Constructor<?> constructor = tagInfo.type.getDeclaredConstructor();
+                constructor.setAccessible(true);
+                valueObject = constructor.newInstance();
             }
 
             if (currentObject != null) {
@@ -197,7 +200,27 @@ public class XMLObject<T> {
                 }
 
                 if (!found) {
-                    throw new MalformedXMLException("<" + level + "> not allowed!");
+                    for (Class<?> subclass : RegisteredSubclasses.getSubclasses(currentTagInfo.type)) {
+                        if (getClassname(subclass).equals(level)) {
+                            currentTagInfo = TagInfo.getInstance(resultType, subclass);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (currentTagInfo.isRepeatableType) {
+                        for (Class<?> subclass : RegisteredSubclasses.getSubclasses(currentTagInfo.componentType)) {
+                            if (getClassname(subclass).equals(level)) {
+                                currentTagInfo = TagInfo.getInstance(resultType, subclass);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        throw new MalformedXMLException("<" + level + "> not allowed!");
+                    }
                 }
             }
         }

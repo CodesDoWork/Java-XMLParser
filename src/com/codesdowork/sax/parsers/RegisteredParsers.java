@@ -33,4 +33,11 @@ public abstract class RegisteredParsers {
         HashMap<Class<?>, ValueParser<?>> typeParsers = PARSERS.computeIfAbsent(resultType, key -> new HashMap<>());
         typeParsers.put(clazz, parser);
     }
+
+    public static void unregisterParser(Class<?> resultType, Class<?> clazz) {
+        HashMap<Class<?>, ValueParser<?>> typeParsers = PARSERS.get(resultType);
+        if (typeParsers != null) {
+            typeParsers.remove(clazz);
+        }
+    }
 }

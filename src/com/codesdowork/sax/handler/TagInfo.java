@@ -5,6 +5,7 @@ import com.codesdowork.sax.parsers.RegisteredParsers;
 import com.codesdowork.sax.parsers.ValueParser;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
@@ -90,11 +91,16 @@ public class TagInfo {
             AnnotatedType[] types = currentClass.getAnnotatedInterfaces();
             for (AnnotatedType annotatedType : types) {
                 if (isCollectionType(annotatedType)) {
-                    if(annotatedType instanceof ParameterizedType pt) {
+                    if (annotatedType instanceof ParameterizedType pt) {
                         Type t = pt.getActualTypeArguments()[0];
                         if (t instanceof Class<?>) {
                             return new ComponentTypeResult((Class<?>) t, true);
                         }
+                    }
+
+                    if (field != null && field.getGenericType() instanceof ParameterizedType pt) {
+                        Type t = pt.getActualTypeArguments()[0];
+                        return new ComponentTypeResult((Class<?>) t, true);
                     }
 
                     return new ComponentTypeResult(Object.class, true);
@@ -130,7 +136,11 @@ public class TagInfo {
             return registeredParser == null ? RegisteredParsers.getDefaultParser(type) : registeredParser;
         } else {
             try {
-                return annotation.value().getDeclaredConstructor().newInstance();
+                //noinspection unchecked
+                Constructor<ValueParser<?>> constructor =
+                        (Constructor<ValueParser<?>>) annotation.value().getDeclaredConstructor();
+                constructor.setAccessible(true);
+                return constructor.newInstance();
             } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
                 e.printStackTrace();
             }
