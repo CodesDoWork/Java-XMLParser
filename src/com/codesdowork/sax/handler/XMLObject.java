@@ -237,15 +237,20 @@ public class XMLObject<T> {
 
         Array.set(newArray, index, valueObject);
         objectStack.pop();
-        Object parentObject = objectStack.peek();
+        Object parentObject = objectStack.size() == 0 ? null : objectStack.peek();
         objectStack.push(newArray);
 
-        String lastLevel = path.pop();
-        TagInfo parentInfo = getTagInfo();
-        path.push(lastLevel);
+        if (parentObject == null) {
+            //noinspection unchecked
+            result = (T) newArray;
+        } else {
+            String lastLevel = path.pop();
+            TagInfo parentInfo = getTagInfo();
+            path.push(lastLevel);
 
-        parentInfo.field.setAccessible(true);
-        parentInfo.field.set(parentObject, newArray);
+            parentInfo.field.setAccessible(true);
+            parentInfo.field.set(parentObject, newArray);
+        }
     }
 
     private String getFieldName(Field field) {

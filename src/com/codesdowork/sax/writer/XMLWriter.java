@@ -4,21 +4,31 @@ import com.codesdowork.sax.annotations.XmlTag;
 import com.codesdowork.sax.handler.TagInfo;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 
 public class XMLWriter {
 
-    private Class<?> resultType;
+    private Class<?> rootType;
+
+    private String rootTag;
+
+    private PrettyXmlWriter writer;
 
     public <T> String toXML(T obj) {
-        resultType = obj.getClass();
+        return toXML(obj, null);
+    }
+
+    public <T> String toXML(T obj, String rootTag) {
+        this.rootType = obj.getClass();
+        this.rootTag = rootTag;
+
         try (PrettyXmlWriter writer = new PrettyXmlWriter()) {
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
+            this.writer = writer;
 
-            return toXML(writer, obj).toString();
+            return writeToXML(obj, TagInfo.getInstance(rootType, rootType)).toString();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -26,52 +36,74 @@ public class XMLWriter {
         return null;
     }
 
-    private <T> StringWriter toXML(PrettyXmlWriter writer, T obj) throws IOException {
+    private <T> PrettyXmlWriter writeToXML(T obj, TagInfo classInfo) throws IOException {
+        if (obj == null) {
+            return writer;
+        }
+
         Class<?> clazz = obj.getClass();
-
         String tag = clazz.getSimpleName().toLowerCase();
-        writer.writeTag(tag, TagType.Opening);
-        do {
-            for (Field field : clazz.getDeclaredFields()) {
-                if(Modifier.isStatic(field.getModifiers())) {
-                    continue;
-                }
 
-                XmlTag xmlTag = field.getDeclaredAnnotation(XmlTag.class);
-                String fieldName = xmlTag == null ? field.getName().toLowerCase() : xmlTag.value();
-                Class<?> fieldType = field.getType();
 
-                writer.writeTag(fieldName, TagType.Opening);
-                try {
-                    field.setAccessible(true);
-                    Object value = field.get(obj);
-
-                    TagInfo tagInfo = TagInfo.getInstance(resultType, field);
-                    if (tagInfo.isPrimitiveType) {
-                        writer.writeValue(String.valueOf(value));
-                    } else if (tagInfo.isRepeatableType) {
-                        if (fieldType.isArray()) {
-                            for (Object listItem : (Object[]) value) {
-                                toXML(writer, listItem);
-                            }
-                        } else {
-                            // Collection
-                            for (Object listItem : (Collection<?>) value) {
-                                toXML(writer, listItem);
-                            }
-                        }
-                    } else {
-                        toXML(writer, value);
-                    }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-                writer.writeTag(fieldName, TagType.Closing);
+        if (classInfo.isRepeatableType) {
+            if (clazz == rootType) {
+                writer.writeTag(rootTag, TagType.Opening);
+                processRepeatable(obj, classInfo);
+                writer.writeTag(rootTag, TagType.Closing);
+            } else {
+                processRepeatable(obj, classInfo);
             }
+        } else {
+            writer.writeTag(tag, TagType.Opening);
 
-            clazz = clazz.getSuperclass();
-        } while (clazz != null); writer.writeTag(tag, TagType.Closing);
+            do {
+                for (Field field : clazz.getDeclaredFields()) {
+                    if (!Modifier.isStatic(field.getModifiers())) {
+                        try {
+                            field.setAccessible(true);
+                            Object value = field.get(obj);
+                            if (value != null) {
+                                XmlTag xmlTag = field.getDeclaredAnnotation(XmlTag.class);
+                                String fieldName = xmlTag == null ? field.getName().toLowerCase() : xmlTag.value();
+
+                                writer.writeTag(fieldName, TagType.Opening);
+                                writeValue(field, value);
+                                writer.writeTag(fieldName, TagType.Closing);
+                            }
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
+                clazz = clazz.getSuperclass();
+            } while (clazz != null);
+
+            writer.writeTag(tag, TagType.Closing);
+        }
 
         return writer;
+    }
+
+    private void writeValue(Field field, Object value) throws IOException {
+        TagInfo tagInfo = TagInfo.getInstance(rootType, field);
+        if (tagInfo.isPrimitiveType) {
+            writer.writeValue(String.valueOf(value));
+        } else {
+            writeToXML(value, tagInfo);
+        }
+    }
+
+    private void processRepeatable(Object obj, TagInfo tagInfo) throws IOException {
+        if (tagInfo.type.isArray()) {
+            for (Object listItem : (Object[]) obj) {
+                writeToXML(listItem, TagInfo.getInstance(rootType, tagInfo.componentType));
+            }
+        } else {
+            for (Object listItem : (Collection<?>) obj) {
+                writeToXML(listItem, TagInfo.getInstance(rootType, tagInfo.componentType));
+            }
+        }
+
     }
 }
