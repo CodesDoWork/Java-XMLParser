@@ -30,7 +30,7 @@ public class XMLWriter {
 
             return writeToXML(obj, TagInfo.getInstance(rootType, rootType)).toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
 
         return null;
@@ -71,7 +71,7 @@ public class XMLWriter {
                                 writer.writeTag(fieldName, TagType.Closing);
                             }
                         } catch (IllegalAccessException e) {
-                            e.printStackTrace();
+                            System.err.println(e.getMessage());
                         }
                     }
                 }

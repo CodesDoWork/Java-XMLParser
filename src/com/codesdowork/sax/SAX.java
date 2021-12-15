@@ -21,7 +21,7 @@ public abstract class SAX {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             parser = factory.newSAXParser();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 
@@ -30,7 +30,6 @@ public abstract class SAX {
             parser.parse(new InputSource(new StringReader(xml)), handler);
         } catch (IOException | SAXException e) {
             System.err.println("Error parsing " + xml + ": " + e);
-            e.printStackTrace();
         }
     }
 

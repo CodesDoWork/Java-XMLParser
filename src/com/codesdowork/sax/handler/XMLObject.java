@@ -139,7 +139,7 @@ public class XMLObject<T> {
                 }
             }
         } catch (MalformedXMLException | IllegalAccessException e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
 
         path.pop();
@@ -163,7 +163,7 @@ public class XMLObject<T> {
                 currentClass = currentClass.getSuperclass();
             } while (currentClass != null);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            System.err.println(e.getMessage());
         }
     }
 

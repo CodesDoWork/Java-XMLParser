@@ -142,7 +142,7 @@ public class TagInfo {
                 constructor.setAccessible(true);
                 return constructor.newInstance();
             } catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
-                e.printStackTrace();
+                System.err.println(e.getMessage());
             }
         }
 

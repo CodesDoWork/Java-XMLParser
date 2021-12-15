@@ -32,7 +32,7 @@ public class SAXHandler<T> extends DefaultHandler {
                 xmlObject.addAttributes(attributes);
             }
         } catch (MalformedXMLException e) {
-            e.printStackTrace();
+            System.err.println("Malformed XML: " + e.getMessage());
         }
     }
 
